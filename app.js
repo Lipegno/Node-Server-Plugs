@@ -40,7 +40,8 @@ app.get('/plug/:plugid',function(req,res){
                 break; // don't need to find any more plugs
             }
         }
-        res.json({'position':((Date.now() - initTime)%(velocity*12))/100, 'velocity': velocity, 'orientation': orientation});
+        console.log(((Date.now() - initTime)%(velocity*12))/velocity);
+        res.json({'position':((Date.now() - initTime)%(velocity*12))/velocity, 'velocity': velocity, 'orientation': orientation});
     }else{
         res.json("No plugs are active.");
     }
@@ -50,6 +51,120 @@ app.get('/', function(req, res) {
     res.json({ message: 'hooray! welcome to our api!' });
 });
 
+/*Changes Relay State*/
+app.post('/plug/:plugid/relay', function(req, res) {
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+    var state = req.body.state;
+    try {
+        //Creates a new socket
+        var plugSocket = io('http://'+plugName+':5000');
+        plugSocket.on('connect',function(){
+            plugSocket.emit('changeRelayState',{"relayState": state});
+            for(var i = 0; i < activePlugs.length; i++) {
+                if (activePlugs[i].name === plugName) {
+                    activePlugs[i].relayState = state;
+                }
+            }
+            res.sendStatus(200);
+        });
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+});
+
+/*Changes Oriention*/
+app.post('/plug/:plugid/orientation', function(req, res) {
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+    var orientation = req.body.orientation;
+    try {
+        //Creates a new socket
+        var plugSocket = io('http://'+plugName+':5000');
+        plugSocket.on('connect',function(){
+            plugSocket.emit('changeOrientation',{"relayState": orientation});
+                for(var i = 0; i < activePlugs.length; i++) {
+                if (activePlugs[i].name === plugName) {
+                    activePlugs[i].orientation = orientation;
+                }
+            }
+            res.sendStatus(200);
+        });
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+});
+
+/*Changes Position*/
+app.post('/plug/:plugid/position', function(req, res) {
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+    var position = req.body.position;
+    try {
+        //Creates a new socket
+        var plugSocket = io('http://'+plugName+':5000');
+        plugSocket.on('connect',function(){
+            plugSocket.emit('changePosition',{"position": position});
+                for(var i = 0; i < activePlugs.length; i++) {
+                if (activePlugs[i].name === plugName) {
+                    activePlugs[i].position = position;
+                }
+            }
+            res.sendStatus(200);
+        });
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+});
+
+/*Changes Person Near*/
+app.post('/plug/:plugid/personNear', function(req, res) {
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+    var personNear = req.body.personNear;
+    try {
+        //Creates a new socket
+        var plugSocket = io('http://'+plugName+':5000');
+        plugSocket.on('connect',function(){
+            plugSocket.emit('changePersonNear',{"personNear": personNear});
+                for(var i = 0; i < activePlugs.length; i++) {
+                if (activePlugs[i].name === plugName) {
+                    activePlugs[i].personNear = personNear;
+                }
+            }
+            res.sendStatus(200);
+        });
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+});
+
+/*Changes Velocity*/
+app.post('/plug/:plugid/delay', function(req, res) {
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+    var delay = req.body.delay;
+    try {
+        //Creates a new socket
+        var plugSocket = io('http://'+plugName+':5000');
+        plugSocket.on('connect',function(){
+            plugSocket.emit('changeDelay',{"delay": delay});
+            for(var i = 0; i < activePlugs.length; i++) {
+                if (activePlugs[i].name === plugName) {
+                    activePlugs[i].delay = delay;
+                }
+            }
+            res.sendStatus(200);
+        });
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+});
 
 function initConfig(){
     /*  Initial Config Manager  */
@@ -60,15 +175,11 @@ function initConfig(){
     }else{
         orientation = 1
     }
-    var delay = 100;
+    var delay = 255;
     var relayState = 0;
     var personNear = 1;
     return {'orientation': orientation,'position': position, 'delay':delay,'relayState': relayState,'personNear':personNear};
 }
-
-
-
-
 
 function networkScanner(){
     /*  Network Scanner and gives socket it's initial configs   */

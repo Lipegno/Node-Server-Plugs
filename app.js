@@ -164,9 +164,9 @@ function initConfig(){
     var position  = activePlugs.length;
     var orientation;
     if(activePlugs.length >= 11) {
-        orientation = 0;
+        orientation = 1;
     }else{
-        orientation = 1
+        orientation = 2;
     }
     var delay = 255;
     var relayState = 0;
@@ -191,28 +191,29 @@ function networkScanner(){
 
     browser.on('serviceUp', function(service) {
         if(service.host.substring(0, 4) === "plug") {
-            //console.log(service);
             console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
             var plugObject = {name:service.host.substring(0, service.host.length - 1), 'initStateSet': 0 , 'initTime': Date.now()};
             var initConfigs = initConfig();
             try {
+                console.log("The length before adding" + activePlugs.length);
                 plugObject['socketVariable'] = io('http://' + plugObject['name'] + ':5000');
                 plugObject['socketVariable'].on('connect',function(){
                     plugObject['socketVariable'].emit('initConfig',initConfigs);          //Send startUp Data
 	                Object.assign(plugObject, plugObject, initConfigs);
-	                console.log(plugObject);
 	                plugObject['initStateSet'] = 1;                     //Plug has got it's startup Data
 	                plugObject['initTime'] = Date.now();
 	                plugObject['plugSocketState'] = true;               //Socket established or not
 	                activePlugs.push(plugObject);
+	                console.log("The length after adding " + activePlugs.length);
                 });
 
             }
             catch (ex){
-                console.log("Socket is wrong");
+                console.log("Socket is wrong" + ex);
             }
 
         }else{
+            console.log("You're trying to add a device that is not a plug. ")
         }
     });
 
@@ -223,7 +224,7 @@ function networkScanner(){
     browser.on('serviceDown', function(service) {
         if(service.name.substring(0,4) === "plug") {
             console.log("", service.name + ".local" + " is now disconnected.");
-            findAndRemove(activePlugs,'name',service.name + ".local");
+            findAndRemove('name',service.name + ".local");
             //console.log("There are " + activePlugs.length  + " active plugs")
         }else {
             //console.log("Ignoring Device" + service.name);
@@ -236,10 +237,13 @@ function networkScanner(){
 
 
 
-function findAndRemove(array, property, value) {
-    array.forEach(function(result, index) {
+function findAndRemove(property, value) {
+    activePlugs.forEach(function(result, index) {
+        console.log("Active Plugs " + result[property]);
         if(result[property] === value) {
-            array.splice(index, 1);
+            result['socketVariable'].disconnect('unauthorized'); // Closes the socket
+            var removedItems = activePlugs.splice(index, 1);
+            console.log("There are " + activePlugs.length + " active plugs ");
         }
     });
 }

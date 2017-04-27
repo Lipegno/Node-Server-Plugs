@@ -13,7 +13,7 @@ var wss = new WebSocket.Server({ port: 8080 });
 
 var port = process.env.PORT || 7777; //API Rest Port
 var router = express.Router();
-
+var LED_NUM = 12;
 
 var activePlugs = [];
 
@@ -44,7 +44,20 @@ app.get('/plug/:plugid',function(req,res){
         var velocity = selectedPlug.delay;
         var initTime = selectedPlug.initTime;
         var orientation = selectedPlug.orientation;
-        res.json({'position':Math.floor(((Date.now() - initTime)%(velocity*12))/velocity), 'velocity': parseInt(velocity), 'orientation': parseInt(orientation)});
+
+        if (selectedPlug.orientation === 1) {
+            res.json({
+                'position': Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity),
+                'velocity': parseInt(velocity),
+                'orientation': parseInt(orientation)
+            });
+        }else{
+            res.json({
+                'position':  (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity))),
+                'velocity': parseInt(velocity),
+                'orientation': parseInt(orientation)
+            });
+        }
     }else{
         res.json("The Plug is disconnected .");
     }
@@ -58,12 +71,12 @@ app.get('/', function(req, res) {
 app.post('/plug/:plugid/relay', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
-    var relayState = req.body.state;
+    var relayState =  parseInt(req.body.state);
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
         if(plugState.plugSocketState){
-            plugState.socketVariable.emit('changeRelayState',{"relayState": relayState});
+            plugState.socketVariable.emit('changeRelayState',{"relayState":relayState});
             plugState.relayState = relayState;
             res.sendStatus(200);
         }else{
@@ -79,12 +92,12 @@ app.post('/plug/:plugid/relay', function(req, res) {
 app.post('/plug/:plugid/orientation', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
-    var orientation = req.body.orientation;
+    var orientation = parseInt(req.body.orientation);
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
         if(plugState.plugSocketState){
-            plugState.socketVariable.emit('changeOrientation',{"orientation": parseInt(orientation)});
+            plugState.socketVariable.emit('changeOrientation',{"orientation": orientation});
             plugState.orientation = orientation;
 			res.sendStatus(200);
         }else{
@@ -101,11 +114,11 @@ app.post('/plug/:plugid/orientation', function(req, res) {
 app.post('/plug/:plugid/position', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
-    var position = req.body.position;
+    var position = parseInt(req.body.position);
     try {
         var plugState = getPlug(plugName);
         if(plugState.plugSocketState){
-            plugState.socketVariable.emit('changePosition',{"position": parseInt(position)});
+            plugState.socketVariable.emit('changePosition',{"position": position});
             plugState.position = position;
             res.sendStatus(200);
         }else{
@@ -122,7 +135,7 @@ app.post('/plug/:plugid/position', function(req, res) {
 app.post('/plug/:plugid/personNear', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
-    var personNear = req.body.personNear;
+    var personNear = parseInt(req.body.personNear);
     try {
         var plugState = getPlug(plugName);
         if(plugState.plugSocketState){
@@ -142,13 +155,13 @@ app.post('/plug/:plugid/personNear', function(req, res) {
 app.post('/plug/:plugid/delay', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
-    var delay = req.body.delay;
+    var delay = parseInt(req.body.delay);
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
         if(plugState.plugSocketState){
             plugState.socketVariable.emit('changeDelay',{"delay": delay});
-            plugState.personNear = personNear;
+            plugState.delay = delay;
             res.sendStatus(200);
         }else{
             res.sendStatus(500);
@@ -168,7 +181,7 @@ function initConfig(){
     }else{
         orientation = 2;
     }
-    var delay = 255;
+    var delay = 100;
     var relayState = 0;
     var personNear = 1;
     return {'orientation': orientation,'position': position, 'delay':delay,'relayState': relayState,'personNear':personNear};
@@ -233,9 +246,6 @@ function networkScanner(){
 
     browser.start();
 }
-
-
-
 
 function findAndRemove(property, value) {
     activePlugs.forEach(function(result, index) {

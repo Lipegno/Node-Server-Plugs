@@ -1,8 +1,10 @@
 var express = require('express');
 var WebSocket = require('ws');
-var mdns = require('mdns');
 var bodyParser = require('body-parser');
+var mdns = require('mdns');
 var io = require('socket.io-client');
+
+
 //var path = require('path');
 //var favicon = require('serve-favicon');
 //var logger = require('morgan');
@@ -29,7 +31,6 @@ app.use(function(req, res, next) {
     next();
 
 });
-
 app.listen(port);
 console.log("Server is listening on port: " +port);
 
@@ -42,18 +43,18 @@ app.get('/plug/:plugid',function(req,res){
     if(activePlugs.length > 0) {
         var selectedPlug = getPlug(plugName);
         var velocity = selectedPlug.delay;
-        var initTime = selectedPlug.initTime;
+        var initTime = selectedPlug.initTime * 1000; //conversion to seconds
         var orientation = selectedPlug.orientation;
 
         if (selectedPlug.orientation === 1) {
             res.json({
-                'position': Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity),
+                'position': Math.floor(((Date.now() - initTime) % (velocity * 12 )) / (velocity)),
                 'velocity': parseInt(velocity),
                 'orientation': parseInt(orientation)
             });
         }else{
             res.json({
-                'position':  (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity))),
+                'position':  (Math.floor(((Date.now()- initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now()/1000 - initTime) % (velocity * 12)) / velocity))),
                 'velocity': parseInt(velocity),
                 'orientation': parseInt(orientation)
             });
@@ -61,10 +62,6 @@ app.get('/plug/:plugid',function(req,res){
     }else{
         res.json("The Plug is disconnected .");
     }
-});
-
-app.get('/', function(req, res) {
-    res.json({ message: 'hooray! welcome to our api!' });
 });
 
 /*Changes Relay State*/
@@ -75,7 +72,7 @@ app.post('/plug/:plugid/relay', function(req, res) {
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
-        if(plugState.plugSocketState){
+        if(plugState.socketVariable.connected){
             plugState.socketVariable.emit('changeRelayState',{"relayState":relayState});
             plugState.relayState = relayState;
             res.sendStatus(200);
@@ -96,10 +93,12 @@ app.post('/plug/:plugid/orientation', function(req, res) {
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
-        if(plugState.plugSocketState){
+        if(plugState.socketVariable.connected){
             plugState.socketVariable.emit('changeOrientation',{"orientation": orientation});
+
             plugState.orientation = orientation;
-			res.sendStatus(200);
+            plugState.initTime = Date.now()/1000;
+            res.sendStatus(200);
         }else{
 			res.sendStatus(500);
         }
@@ -110,7 +109,7 @@ app.post('/plug/:plugid/orientation', function(req, res) {
     }
 });
 
-/*Changes Position*/
+/*Changes Position
 app.post('/plug/:plugid/position', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
@@ -130,6 +129,7 @@ app.post('/plug/:plugid/position', function(req, res) {
         res.sendStatus(500);
     }
 });
+*/
 
 /*Changes Person Near*/
 app.post('/plug/:plugid/personNear', function(req, res) {
@@ -138,9 +138,10 @@ app.post('/plug/:plugid/personNear', function(req, res) {
     var personNear = parseInt(req.body.personNear);
     try {
         var plugState = getPlug(plugName);
-        if(plugState.plugSocketState){
+        if(plugState.socketVariable.connected){
             plugState.socketVariable.emit('changePersonNear',{"personNear": personNear});
             plugState.personNear = personNear;
+            console.log("Value for person near" + personNear);
             res.sendStatus(200);
         }else{
             res.sendStatus(500);
@@ -159,7 +160,7 @@ app.post('/plug/:plugid/delay', function(req, res) {
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
-        if(plugState.plugSocketState){
+        if(plugState.socketVariable.connected){
             plugState.socketVariable.emit('changeDelay',{"delay": delay});
             plugState.delay = delay;
             res.sendStatus(200);
@@ -175,15 +176,20 @@ app.post('/plug/:plugid/delay', function(req, res) {
 function initConfig(){
     /*  Initial Config Manager  */
     var position  = activePlugs.length;
+
     var orientation;
+
     if(activePlugs.length >= 11) {
-        orientation = 1;
-    }else{
         orientation = 2;
+    }else{
+        orientation = 1;
     }
-    var delay = 100;
-    var relayState = 0;
+
+    orientation = 1;
+    var delay = 500;
+    var relayState = 1;
     var personNear = 1;
+
     return {'orientation': orientation,'position': position, 'delay':delay,'relayState': relayState,'personNear':personNear};
 }
 
@@ -205,21 +211,30 @@ function networkScanner(){
     browser.on('serviceUp', function(service) {
         if(service.host.substring(0, 4) === "plug") {
             console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
-            var plugObject = {name:service.host.substring(0, service.host.length - 1), 'initStateSet': 0 , 'initTime': Date.now()};
+            var plugObject = {name:service.host.substring(0, service.host.length - 1)};
             var initConfigs = initConfig();
             try {
                 console.log("The length before adding" + activePlugs.length);
-                plugObject['socketVariable'] = io('http://' + plugObject['name'] + ':5000');
-                plugObject['socketVariable'].on('connect',function(){
-                    plugObject['socketVariable'].emit('initConfig',initConfigs);          //Send startUp Data
-	                Object.assign(plugObject, plugObject, initConfigs);
-	                plugObject['initStateSet'] = 1;                     //Plug has got it's startup Data
-	                plugObject['initTime'] = Date.now();
-	                plugObject['plugSocketState'] = true;               //Socket established or not
-	                activePlugs.push(plugObject);
-	                console.log("The length after adding " + activePlugs.length);
+                plugObject['socketVariable'] = io.connect('http://' + plugObject['name'] + ':5000');
+                //plugObject['socketVariable'] = plugObject['socketVariable'].connect();
+                plugObject['socketVariable'].emit('initConfig',initConfigs);         //Send startUp Data
+	            Object.assign(plugObject, plugObject, initConfigs);
+	            plugObject['initStateSet'] = 1;                                      //Plug has got it's startup Data
+	            plugObject['initTime'] = Date.now()/1000;
+	            activePlugs.push(plugObject);
+	            console.log("The length after adding " + activePlugs.length);
+
+                plugObject['socketVariable'].on('connect',function(data){
+                    plugObject['socketVariable'].emit('event',{data:'Im connected'});
                 });
 
+	            /*Start an heartbeat listener*/
+	            plugObject['socketVariable'].on('heartbeat',function(data){
+	                console.log("Received an HeartBeat");
+	                console.log(data);
+                    var plugState = getPlug(data.hostname + '.local');
+                    plugState.initTime = data.timestamp;
+                    });
             }
             catch (ex){
                 console.log("Socket is wrong" + ex);
@@ -246,6 +261,7 @@ function networkScanner(){
 
     browser.start();
 }
+
 
 function findAndRemove(property, value) {
     activePlugs.forEach(function(result, index) {

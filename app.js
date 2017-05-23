@@ -173,6 +173,26 @@ app.post('/plug/:plugid/delay', function(req, res) {
     }
 });
 
+app.get('/plug/:plugid/selected',function(req,res){
+    var plugId = req.params.plugid;
+    var plugName = 'plug'+plugId+'.local';
+
+    try {
+        //Creates a new socket
+        var plugState = getPlug(plugName);
+        if(plugState.socketVariable.connected){
+            plugState.socketVariable.emit('selected',{"match": true});
+            res.sendStatus(200);
+        }else{
+            res.sendStatus(500);
+        }
+    }
+    catch (ex){
+        res.sendStatus(500);
+    }
+
+});
+
 function initConfig(){
     /*  Initial Config Manager  */
     var position  = activePlugs.length;

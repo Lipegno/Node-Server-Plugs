@@ -45,18 +45,21 @@ app.get('/plug/:plugid',function(req,res){
         var velocity = selectedPlug.delay;
         var initTime = selectedPlug.initTime * 1000; //conversion to seconds
         var orientation = selectedPlug.orientation;
+        var pattern_2 = selectedPlug.pattern_2;
 
         if (selectedPlug.orientation === 1) {
             res.json({
                 'position': Math.floor(((Date.now() - initTime) % (velocity * 12 )) / (velocity)),
                 'velocity': parseInt(velocity),
-                'orientation': parseInt(orientation)
+                'orientation': parseInt(orientation),
+                'pattern_2':pattern_2
             });
         }else{
             res.json({
                 'position':  (Math.floor(((Date.now()- initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now()/1000 - initTime) % (velocity * 12)) / velocity))),
                 'velocity': parseInt(velocity),
-                'orientation': parseInt(orientation)
+                'orientation': parseInt(orientation),
+                'pattern_2':pattern_2
             });
         }
     }else{
@@ -210,7 +213,9 @@ function initConfig(){
     var relayState = 1;
     var personNear = 1;
 
-    return {'orientation': orientation,'position': position, 'delay':delay,'relayState': relayState,'personNear':personNear};
+    pattern_2 = 5;
+
+    return {'orientation': orientation,'position': position, 'delay':delay,'relayState': relayState,'personNear':personNear, 'pattern_2': pattern_2};
 }
 
 function networkScanner(){

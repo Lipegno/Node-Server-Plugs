@@ -16,6 +16,7 @@ var wss = new WebSocket.Server({ port: 8080 });
 var port = process.env.PORT || 7777; //API Rest Port
 var router = express.Router();
 var LED_NUM = 12;
+var timeThresholdToIgnoreRequests = 5;
 
 var activePlugs = [];
 
@@ -183,12 +184,20 @@ app.get('/plug/:plugid/selected',function(req,res){
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);
-        if(plugState.socketVariable.connected){
-            plugState.socketVariable.emit('selected',{"match": true});
+        if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
+            console.log("Ignoring Requests");
             res.sendStatus(200);
-        }else{
-            res.sendStatus(500);
+        }else {
+            if (plugState.socketVariable.connected) {
+                plugState.socketVariable.emit('selected', {"match": true});
+                res.sendStatus(200);
+                plugState.lastRequest = Date.now()/1000;
+            } else {
+                res.sendStatus(500);
+            }
         }
+
+
     }
     catch (ex){
         res.sendStatus(500);
@@ -246,6 +255,7 @@ function networkScanner(){
 	            Object.assign(plugObject, plugObject, initConfigs);
 	            plugObject['initStateSet'] = 1;                                      //Plug has got it's startup Data
 	            plugObject['initTime'] = Date.now()/1000;
+                plugObject['lastRequest'] = Date.now()/1000;
 	            activePlugs.push(plugObject);
 	            console.log("The length after adding " + activePlugs.length);
 

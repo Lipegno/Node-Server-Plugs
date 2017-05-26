@@ -57,7 +57,7 @@ app.get('/plug/:plugid',function(req,res){
             });
         }else{
             res.json({
-                'position':  (Math.floor(((Date.now()- initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now()/1000 - initTime) % (velocity * 12)) / velocity))),
+                'position':  (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity))),
                 'velocity': parseInt(velocity),
                 'orientation': parseInt(orientation),
                 'pattern_2':pattern_2

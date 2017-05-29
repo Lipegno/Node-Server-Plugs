@@ -20,18 +20,23 @@ var timeThresholdToIgnoreRequests = 5;
 
 var activePlugs = [];
 
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-//app.use('/plug', router); //Adds Prefix on every api url
 app.use(function(req, res, next) {
-
+    console.log("cross-site");
     res.header("Access-Control-Allow-Origin", "*");
-
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-
     next();
-
 });
+
+var isMultipart = /^multipart\//i;
+var urlencodedMiddleware = bodyParser.urlencoded({ extended: true });
+app.use(function (req, res, next) {
+    var type = req.get('Content-Type');
+    if (isMultipart.test(type)) return res.status(500).send("Form-data is not supported.");
+    return urlencodedMiddleware(req, res, next);
+});
+
+//app.use('/plug', router); //Adds Prefix on every api url
 app.listen(port);
 console.log("Server is listening on port: " +port);
 
@@ -94,6 +99,8 @@ app.post('/plug/:plugid/orientation', function(req, res) {
     var plugId = req.params.plugid;
     var plugName = 'plug'+plugId+'.local';
     var orientation = parseInt(req.body.orientation);
+
+
     try {
         //Creates a new socket
         var plugState = getPlug(plugName);

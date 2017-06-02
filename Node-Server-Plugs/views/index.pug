@@ -1,0 +1,26 @@
+extends layout
+
+block scripts
+    script(src='/javascripts/index.js')
+
+block content
+    h1= title
+    p Plugs Available:
+    div(id="plugs")
+        each plug in plugs
+            div
+                p Device name: #{plug.name}
+                div
+                    label LED:
+                    input(name="position" class="position")
+                    label Orientation:
+                    input(name="orientation" class="orientation")
+                    button(class="add") Add more LEDs
+                    br
+                div
+                    label Velocity:
+                    input(name="velocity" class="velocity")
+                    input(type="hidden" value=plug.name)
+                div
+                    button(class="configure") Configure Movements
+                    button(class="stop") Stop Movements

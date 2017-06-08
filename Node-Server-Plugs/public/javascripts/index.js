@@ -6,17 +6,29 @@ var newLeds = "" +
     "<input name='position' class='position'>" +
     "<label>Orientation:</label>" +
     "<input name='orientation' class='orientation'>" +
+    "<label>Red:</label>" +
+    "<input name='red' class='red'>" +
+    "<label>Green:</label>" +
+    "<input name='green' class='green'>" +
+    "<label>Blue:</label>" +
+    "<input name='blue' class='blue'>" +
     "<br>";
 
 function addNewPlugForm(plugName) {
     return "" +
         "<div>" +
-            "<p>Device name: #{plug.name}</p>" +
+            "<p>Device name:"+ plugName +"</p>" +
             "<div>" +
                 "<label>LED:</label>" +
                 "<input name='position' class='position'>" +
                 "<label>Orientation:</label>" +
                 "<input name='orientation' class='orientation'>" +
+                "<label>Red:</label>" +
+                "<input name='red' class='red'>" +
+                "<label>Green:</label>" +
+                "<input name='green' class='green'>" +
+                "<label>Blue:</label>" +
+                "<input name='blue' class='blue'>" +
                 "<button class='add'> Add more LEDs</button>" +
                 "<br>" +
             "</div>" +
@@ -36,7 +48,6 @@ $().ready(function () {
         $("#plugs").append(addNewPlugForm(data.name));
     });
 
-
     $(".add").click( function (e) {
         $(this).parent().append(newLeds);
     });
@@ -44,9 +55,14 @@ $().ready(function () {
     $(".configure").click(function (e) {
         var leds = [];
         $(this).parent().parent().find(".position").each(function (index, elem) {
-            leds.push({position:$(elem).val(),orientation:$(elem).next().next().val()})
+            var position = $(elem);
+            var orientation = $(elem).next().next();
+            var red = orientation.next().next();
+            var green = red.next().next();
+            var blue = green.next().next();
+            leds.push({position:position.val(),orientation:orientation.val(),red:red.val(),green:green.val(),blue:blue.val()})
         });
-        var velocity = $(this).parent().prev().find(".velocity").val();
+        var velocity = parseInt($(this).parent().prev().find(".velocity").val());
         var data = {leds:leds,velocity:velocity};
         $.post('/plug/'+$(this).parent().prev().find(":hidden").val().match(/\d+/)[0],data);
     });

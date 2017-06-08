@@ -1,10 +1,9 @@
 /**
  * Created by vmcb on 02-06-2017.
  */
-var mdns = require('mdns');
-var plugs = require('./plugs');
-
-exports.networkScanner = function(socket_io_server){
+exports.networkScanner = function(socket_io_server, plugs){
+    var mdns = require('mdns');
+    var io = require('socket.io-client');
     /*  Network Scanner and gives socket it's initial configs   */
     console.log("Starting Monitoring Service");
 
@@ -25,9 +24,9 @@ exports.networkScanner = function(socket_io_server){
             var plugObject = {name:service.host.substring(0, service.host.length - 1)};
             try {
                 console.log("The length before adding" + plugs.activePlugs.length);
+                socket_io_server.emit("new_plug", plugObject);
                 plugObject['socketVariable'] = io.connect('http://' + plugObject['name'] + ':5000');
                 plugs.activePlugs.push(plugObject);
-                socket_io_server.emit("new_plug", plugObject);
                 console.log("The length after adding " + plugs.activePlugs.length);
 
                 plugObject['socketVariable'].on('connect',function(data){

@@ -7,11 +7,11 @@ module.exports = function(socket_io_server) {
 
   /* GET home page. */
     router.get('/', function (req, res, next) {
+        res.render('index', {plugs: plugs.activePlugs});
         if (firstTime) {
-            scanner.networkScanner(socket_io_server);
+            scanner.networkScanner(socket_io_server, plugs);
             firstTime = false;
         }
-        res.render('index', {plugs: plugs.activePlugs});
     });
 
     return router;

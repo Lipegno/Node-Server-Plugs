@@ -1,6 +1,5 @@
 module.exports = function(socket_io) {
     var express = require('express');
-    var io = require('socket.io-client');
     var router = express.Router();
     var plugs = require('../plugs');
 
@@ -123,9 +122,7 @@ module.exports = function(socket_io) {
     router.post('/:plugid/', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
-        console.log(req.body);
         var initConfigs = plugs.initConfig(req.body.leds,req.body.velocity);
-        console.log(initConfigs);
         try {
             //Creates a new socket
             var plugState = plugs.getPlug(plugName);

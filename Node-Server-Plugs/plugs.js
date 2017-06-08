@@ -3,7 +3,7 @@
  */
 exports.LED_NUM = 12;
 
-exports.activePlugs = [{name:"plug2"}, {name:"plug1"}];
+exports.activePlugs = [];
 
 exports.initConfig = function (leds, velocity){
     /*  Initial Config Manager  */

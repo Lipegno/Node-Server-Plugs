@@ -171,7 +171,7 @@ module.exports = function(socket_io) {
         }
     });
 
-    router.get('/plug/:plugId/selected/:ledId',function(req,res){
+    router.get('/:plugId/selected/:ledId',function(req,res){
         var plugId = req.params.plugId;
         var plugName = 'plug'+plugId+'.local';
         var ledId = req.params.ledId;

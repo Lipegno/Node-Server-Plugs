@@ -11,21 +11,30 @@ module.exports = function(socket_io) {
             var selectedPlug = plugs.getPlug(plugName);
             var velocity = selectedPlug.delay;
             var initTime = selectedPlug.initTime * 1000; //conversion to seconds
-            var orientation = selectedPlug.orientation;
 
-            if (selectedPlug.orientation === 1) {
-                res.json({
-                    'position': Math.floor(((Date.now() - initTime) % (velocity * 12 )) / (velocity)),
+            var leds = [];
+
+            var firsLEDtPosition = parseInt(selectedPlug.leds[0].position);
+            console.log(firsLEDtPosition);
+            selectedPlug.leds.forEach(function(result, index) {
+                var offset = result.position - firsLEDtPosition;
+                var baseActualPosition = 0;
+                if (result.orientation == 1) {
+                    baseActualPosition = Math.floor(((Date.now() - initTime) % (velocity * plugs.LED_NUM )) / (velocity));
+                }
+                else {
+                    baseActualPosition = (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (plugs.LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity)));
+
+                }
+                var actualPosition = (firsLEDtPosition + offset + baseActualPosition) % plugs.LED_NUM;
+                leds.push({
+                    'position': actualPosition,
                     'velocity': parseInt(velocity),
-                    'orientation': parseInt(orientation)
-                });
-            } else {
-                res.json({
-                    'position': (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (LED_NUM - (Math.floor(((Date.now() / 1000 - initTime) % (velocity * 12)) / velocity))),
-                    'velocity': parseInt(velocity),
-                    'orientation': parseInt(orientation)
-                });
-            }
+                    'orientation': parseInt(result.orientation)
+                })
+
+            });
+            res.json(leds);
         } else {
             res.json("The Plug is disconnected .");
         }
@@ -132,6 +141,7 @@ module.exports = function(socket_io) {
                 plugState.initStateSet = 1;                                      //Plug has got it's startup Data
                 plugState.initTime = Date.now()/1000;
                 plugState.lastRequest = Date.now()/1000;
+                plugState.leds = req.body.leds;
                 res.sendStatus(200);
             } else {
                 res.sendStatus(500);
@@ -159,6 +169,26 @@ module.exports = function(socket_io) {
         catch (ex) {
             res.sendStatus(500);
         }
+    });
+
+    router.get('/plug/:plugId/selected/:ledId',function(req,res){
+        var plugId = req.params.plugId;
+        var plugName = 'plug'+plugId+'.local';
+        var ledId = req.params.ledId;
+        try {
+            //Creates a new socket
+            var plugState = plugs.getPlug(plugName);
+            if(plugState.socketVariable.connected){
+                plugState.socketVariable.emit('selected',{"led": ledId});
+                res.sendStatus(200);
+            }else{
+                res.sendStatus(500);
+            }
+        }
+        catch (ex){
+            res.sendStatus(500);
+        }
+
     });
 
     return router;

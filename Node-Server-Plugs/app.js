@@ -5,6 +5,8 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var socket_io    = require( "socket.io" );
+var scanner = require('./scanner');
+var plugs = require('./plugs');
 
 // Express
 var app = express();
@@ -13,7 +15,9 @@ var app = express();
 var io = socket_io();
 app.io = io;
 
-var index = require('./routes/index')(io);
+scanner.networkScanner(io, plugs);
+
+var index = require('./routes/index')(plugs);
 var plug = require('./routes/plug')(io);
 
 // view engine setup

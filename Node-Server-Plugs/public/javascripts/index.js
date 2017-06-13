@@ -2,6 +2,7 @@
  * Created by vmcb on 02-06-2017.
  */
 var newLeds = "" +
+    "<div>" +
     "<label>LED:" +
     "<input name='position' class='position'>" +
     "<label>Orientation:</label>" +
@@ -12,7 +13,9 @@ var newLeds = "" +
     "<input name='green' class='green'>" +
     "<label>Blue:</label>" +
     "<input name='blue' class='blue'>" +
-    "<br>";
+    "<button class='removeLED'>Remove LED</button>" +
+    "<br>" +
+    "</div>";
 
 function addNewPlugForm(plugName) {
     return "" +
@@ -49,7 +52,7 @@ $().ready(function () {
     });
 
     $(".add").click( function (e) {
-        $(this).parent().append(newLeds);
+        $(this).parent().prev().prev().append(newLeds);
     });
 
     $(".configure").click(function (e) {
@@ -70,4 +73,11 @@ $().ready(function () {
     $(".stop").click(function (e) {
         $.post('/plug/'+$(this).parent().prev().find(":hidden").val().match(/\d+/)[0]+'/stopLeds');
     });
+
+    $(document).on("click", ".removeLED", function (e) {
+        console.log("click");
+        console.log($(this).parent());
+        $(this).parent().empty();
+    });
+
 });

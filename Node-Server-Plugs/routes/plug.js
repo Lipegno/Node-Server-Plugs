@@ -176,13 +176,18 @@ module.exports = function(socket_io) {
         var plugName = 'plug'+plugId+'.local';
         var ledId = req.params.ledId;
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if(plugState.socketVariable.connected){
-                plugState.socketVariable.emit('selected',{"led": ledId});
+            if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
+                console.log("Ignoring Requests");
                 res.sendStatus(200);
-            }else{
-                res.sendStatus(500);
+            }else {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('selected', {"led": ledId});
+                    res.sendStatus(200);
+                    plugState.lastRequest = Date.now() / 1000;
+                } else {
+                    res.sendStatus(500);
+                }
             }
         }
         catch (ex){

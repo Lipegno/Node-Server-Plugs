@@ -2,9 +2,10 @@ module.exports = function(socket_io) {
     var express = require('express');
     var router = express.Router();
     var plugs = require('../plugs');
+    var timeThresholdToIgnoreRequests = 5;
 
 //velocidade, posição inicial
-    router.get('/:plugid', function (req, res) {
+    router.get('/:plugid(\\d+)', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
         if (plugs.activePlugs.length > 0) {
@@ -194,6 +195,15 @@ module.exports = function(socket_io) {
             res.sendStatus(500);
         }
 
+    });
+
+    router.get('/new', function (req, res) {
+        var plugObject = {name:'plug3.local'};
+        console.log("The length before adding" + plugs.activePlugs.length);
+        socket_io.emit("new_plug", plugObject);
+        plugs.activePlugs.push(plugObject);
+        console.log("The length after adding " + plugs.activePlugs.length);
+        res.sendStatus(200);
     });
 
     return router;

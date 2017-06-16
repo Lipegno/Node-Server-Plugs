@@ -31,7 +31,10 @@ module.exports = function(socket_io) {
                 leds.push({
                     'position': actualPosition,
                     'velocity': parseInt(velocity),
-                    'orientation': parseInt(result.orientation)
+                    'orientation': parseInt(result.orientation),
+                    'red': parseInt(result.red),
+                    'green': parseInt(result.green),
+                    'blue': parseInt(result.blue)
                 })
 
             });
@@ -149,6 +152,7 @@ module.exports = function(socket_io) {
             }
         }
         catch (ex) {
+            console.log(ex);
             res.sendStatus(500);
         }
     });

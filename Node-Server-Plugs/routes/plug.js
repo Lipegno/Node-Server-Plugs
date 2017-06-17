@@ -2,9 +2,10 @@ module.exports = function(socket_io) {
     var express = require('express');
     var router = express.Router();
     var plugs = require('../plugs');
+    var timeThresholdToIgnoreRequests = 5;
 
 //velocidade, posição inicial
-    router.get('/:plugid', function (req, res) {
+    router.get('/:plugid(\\d+)', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
         if (plugs.activePlugs.length > 0) {
@@ -30,7 +31,10 @@ module.exports = function(socket_io) {
                 leds.push({
                     'position': actualPosition,
                     'velocity': parseInt(velocity),
-                    'orientation': parseInt(result.orientation)
+                    'orientation': parseInt(result.orientation),
+                    'red': parseInt(result.red),
+                    'green': parseInt(result.green),
+                    'blue': parseInt(result.blue)
                 })
 
             });
@@ -148,6 +152,7 @@ module.exports = function(socket_io) {
             }
         }
         catch (ex) {
+            console.log(ex);
             res.sendStatus(500);
         }
     });
@@ -176,19 +181,33 @@ module.exports = function(socket_io) {
         var plugName = 'plug'+plugId+'.local';
         var ledId = req.params.ledId;
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if(plugState.socketVariable.connected){
-                plugState.socketVariable.emit('selected',{"led": ledId});
+            if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
+                console.log("Ignoring Requests");
                 res.sendStatus(200);
-            }else{
-                res.sendStatus(500);
+            }else {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('selected', {"led": ledId});
+                    res.sendStatus(200);
+                    plugState.lastRequest = Date.now() / 1000;
+                } else {
+                    res.sendStatus(500);
+                }
             }
         }
         catch (ex){
             res.sendStatus(500);
         }
 
+    });
+
+    router.get('/new', function (req, res) {
+        var plugObject = {name:'plug3.local'};
+        console.log("The length before adding" + plugs.activePlugs.length);
+        socket_io.emit("new_plug", plugObject);
+        plugs.activePlugs.push(plugObject);
+        console.log("The length after adding " + plugs.activePlugs.length);
+        res.sendStatus(200);
     });
 
     return router;

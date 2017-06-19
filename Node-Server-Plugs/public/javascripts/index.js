@@ -24,12 +24,34 @@ var newLedRow = "" +
 //Adds a new Box;
 
 function addNewPlugForm(plugName) {
-    return
-
-
-
-
-
+    return""+
+        "<div class='panel panel-default'>" +
+            "<div class='panel-heading'>" +
+                "<h4 class='panel-title'>" +
+                    "<a data-toggle='collapse'  data-parent='#accordion' href='#collapse" + plugName.substr(0, plugName.length - 6) + "'>Device Name:" + plugName.substr(0, plugName.length - 6) + "</a>" +
+                "</h4>" +
+            "</div>" +
+        "<div id='collapse" + plugName.substr(0, plugName.length - 6) + "' class='panel-collapse collapse'>" +
+            "<div class='panel-body'>Panel Body</div>" +
+                "<div class='row'>" +
+                    "<div class='col-xs-3'><label> Initial Position </label></div>" +
+                    "<div class='col-xs-3'><label> Orientation </label></div>" +
+                    "<div class='col-xs-3'><label> Color </label></div>" +
+                    "<div class='col-xs-3'><label> Remove </label></div>" +
+                "</div>" +
+                "<div class='row'>" +
+                    "<div class='col-xs-6'>" +
+                        "<input type='text' placeholder='Velocity'>" +
+                        "<input type='text' value='"+ plugName +"'>"+
+                    "</div>" +
+                    "<div class='col-xs-6'>" +
+                        "<span class='glyphicon glyphicon-plus' aria-hidden='true'></span>" +
+                        "<span class='glyphicon glyphicon-stop' aria-hidden='true'></span>" +
+                        "<span class='glyphicon glyphicon-play' aria-hidden='true'></span>" +
+                    "</div>" +
+                "</div>" +
+            "</div>" +
+        "</div>"
 }
 
 $().ready(function () {

@@ -24,9 +24,10 @@ a {
   content: "\e080";    /* adjust as needed, taken from bootstrap.css */
 }
 
-.glyphicon{
-  float:right;
-  padding-left: 10px;
+.glyphicon-play, .glyphicon-plus, .glyphicon-stop {
+  padding-left: 15px;
+  font-size: 20px;
+  padding-top: 18px;
 }
 
 .row{

@@ -202,7 +202,8 @@ module.exports = function(socket_io) {
     });
 
     router.get('/new', function (req, res) {
-        var plugObject = {name:'plug3.local'};
+        var plugName = "plug" + plugs.activePlugs.length + ".local";
+        var plugObject = {name:plugName};
         console.log("The length before adding" + plugs.activePlugs.length);
         socket_io.emit("new_plug", plugObject);
         plugs.activePlugs.push(plugObject);

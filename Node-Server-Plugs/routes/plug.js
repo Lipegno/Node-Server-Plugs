@@ -5,6 +5,19 @@ module.exports = function(socket_io) {
     var timeThresholdToIgnoreRequests = 5;
 
 //velocidade, posição inicial
+    router.get('/', function (req, res) {
+        var m_plugs = [];
+        for (var i = 0; i < plugs.activePlugs.length; i++) {
+            m_plugs.push({
+                name: plugs.activePlugs[i].name,
+                velocity: plugs.activePlugs[i].delay,
+                leds: plugs.activePlugs[i].leds
+            })
+        }
+        res.json(m_plugs);
+    });
+
+
     router.get('/:plugid(\\d+)', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';

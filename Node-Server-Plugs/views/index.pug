@@ -12,6 +12,7 @@ block scripts
     script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js")
     script(src='/javascripts/socket.io.js')
     script(src='/javascripts/bootstrap-colorpicker.min.js')
+    script(src='/javascripts/validator.min.js')
     script(src='/javascripts/index.js')
 
 
@@ -49,14 +50,19 @@ block body
                                 div.col.xs-3
                                     label Remove
 
-
-                            div.row
-                                div.col-xs-6
-                                    +input("text","","Velocity")
-                                    input(type="hidden" value=plug.name)
-                                div.col-xs-6
-                                    +icon("play")
-                                    +icon("stop")
-                                    +icon("plus")
+                            form(data-toggle="validator" role="form" method="post" action="/plug/"+ (plug.name).match(/\d+/)[0])
+                                div.row
+                                    div.col-xs-6
+                                        div.form-group
+                                            label
+                                            if (typeof plug.leds !== 'undefined')
+                                                input(type="number" min=50 max=2000 placeholder="Velocity" data-error="Please insert a number between 50 and 2000" value=plug.delay required).has-feedback.form-control.velocity
+                                            else
+                                                input(type="number" min=50 max=2000 placeholder="Velocity" data-error="Please insert a number between 50 and 2000" required).has-feedback.form-control.velocity
+                                            div.help-block.with-errors
+                                    div.col-xs-6
+                                        +icon("play")
+                                        +icon("stop")
+                                        +icon("plus")
 
 

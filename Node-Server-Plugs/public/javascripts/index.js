@@ -110,9 +110,8 @@ $().ready(function () {
                     form.find('.velocity').parent().parent().parent().before(newLedRow);
                     form.find('.velocity').parent().parent().parent().prev().find('.position').val(element.position);
                     form.find('.velocity').parent().parent().parent().prev().find('.orientation').val(element.orientation);
-                    console.log("#" + parseInt(element.red).toString(16) + parseInt(element.green).toString(16) + parseInt(element.blue).toString(16));
                     form.find('.velocity').parent().parent().parent().prev().find('.colorpicker-component').colorpicker({
-                        color: "#" + parseInt(element.red).toString(16) + parseInt(element.green).toString(16) + parseInt(element.blue).toString(16),
+                        color: "rgb(" + element.red + "," + element.green + "," + element.blue+")",
                         format: 'rgb'
                     })
                 });

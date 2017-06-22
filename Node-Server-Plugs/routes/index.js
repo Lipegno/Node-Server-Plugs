@@ -4,7 +4,15 @@ module.exports = function(plugs) {
 
   /* GET home page. */
     router.get('/', function (req, res, next) {
-        res.render('index', {plugs: plugs.activePlugs});
+        var m_plugs = [];
+        for (var i = 0; i < plugs.activePlugs.length; i++) {
+            m_plugs.push({
+                name: plugs.activePlugs[i].name,
+                velocity: plugs.activePlugs[i].delay,
+                leds: plugs.activePlugs[i].leds
+            })
+        }
+        res.render('index', {plugs: m_plugs});
     });
 
     return router;

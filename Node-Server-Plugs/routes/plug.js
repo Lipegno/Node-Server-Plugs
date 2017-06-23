@@ -15,7 +15,7 @@ module.exports = function(socket_io) {
     var actual_color_position = Math.floor(Math.random() * default_colors.length);
     var initial_led_position = Math.floor(Math.random() * plugs.LED_NUM);
     var default_velocity = 200;
-    var num_targets = 5;
+    var num_targets = 4;
 
 //velocidade, posição inicial
     router.get('/', function (req, res) {
@@ -47,7 +47,6 @@ module.exports = function(socket_io) {
                 }else{
                     leds[0].orientation = 2;
                 }
-
                 randomizeColor(leds[0]);
 
                 var initconfigs = plugs.initConfig(leds, velocity);
@@ -236,6 +235,7 @@ module.exports = function(socket_io) {
     });
 
     router.get('/:plugId/selected/', function (req,res) {
+        var localLedStandartPosition = Math.floor(Math.random() * 12);
         var plugId = req.params.plugId;
         plugs.activePlugs.forEach(function (element, index) {
             stopLeds(element);
@@ -244,17 +244,19 @@ module.exports = function(socket_io) {
                 leds = [];
                 for (i = 0; i < num_targets; i++) {
                     led = {};
-                    led.position = Math.floor(Math.random() * 12);
+                    led.position = localLedStandartPosition%12;
                     led.orientation = Math.floor(Math.random() * 2) + 1;
                     randomizeColor(led);
                     leds.push(led);
+                    localLedStandartPosition+=3;
                 }
                 var initconfigs = plugs.initConfig(leds, velocity);
                 initializeLeds(element, initconfigs, leds);
             }
         });
-        res.sendStatus(200);
+        res.status(200).send("Plug initialized with " + num_targets + " targets.");
     });
+
 
     router.get('/:plugId/selected/:ledId',function(req,res){
         var plugId = req.params.plugId;

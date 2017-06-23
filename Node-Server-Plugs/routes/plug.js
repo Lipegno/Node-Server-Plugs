@@ -3,6 +3,18 @@ module.exports = function(socket_io) {
     var router = express.Router();
     var plugs = require('../plugs');
     var timeThresholdToIgnoreRequests = 5;
+    var default_colors = [
+        {red:0,green:0,blue:255},
+        {red:0,green:255,blue:0},
+        {red:0,green:255,blue:255},
+        {red:255,green:0,blue:0},
+        {red:255,green:0,blue:255},
+        {red:255,green:255,blue:0},
+        {red:255,green:255,blue:255}
+    ];
+    var actual_color_position = Math.floor(Math.random() * default_colors.length);
+    var default_velocity = 200;
+    var num_targets = 5;
 
 //velocidade, posição inicial
     router.get('/', function (req, res) {
@@ -15,6 +27,24 @@ module.exports = function(socket_io) {
             })
         }
         res.json(m_plugs);
+    });
+
+    router.get('/start', function (req, res) {
+        for (var i = 0; i < plugs.activePlugs.length; i++) {
+            var velocity = default_velocity;
+            var leds = [{}];
+            leds[0].position = (Math.floor(Math.random() * 12) + 6) % 12;
+            leds[0].orientation = Math.floor(Math.random() * 2) + 1;
+            randomizeColor(leds[0]);
+            var initconfigs = plugs.initConfig(leds,velocity);
+            if (plugs.activePlugs[i].socketVariable) {
+                if (!initializeLeds(plugs.activePlugs[i], initconfigs, leds)) {
+                    res.sendStatus(500);
+                    break;
+                }
+            }
+        }
+        res.sendStatus(200);
     });
 
 
@@ -157,13 +187,7 @@ module.exports = function(socket_io) {
         try {
             //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('initConfig',initConfigs);         //Send startUp Data
-                Object.assign(plugState, plugState, initConfigs);
-                plugState.initStateSet = 1;                                      //Plug has got it's startup Data
-                plugState.initTime = Date.now()/1000;
-                plugState.lastRequest = Date.now()/1000;
-                plugState.leds = req.body.leds;
+            if(initializeLeds(plugState,initConfigs,req.body.leds)) {
                 res.sendStatus(200);
             } else {
                 res.sendStatus(500);
@@ -182,9 +206,7 @@ module.exports = function(socket_io) {
         try {
             //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('stop', {"stop": true});
-                delete plugState.leds;
+            if (stopLeds(plugState)) {
                 res.sendStatus(200);
             } else {
                 res.sendStatus(500);
@@ -195,23 +217,37 @@ module.exports = function(socket_io) {
         }
     });
 
+    router.get('/:plugId/selected/', function (req,res) {
+        var plugId = req.params.plugId;
+        plugs.activePlugs.forEach(function (element, index) {
+            stopLeds(element);
+            if(element.name === "plug" + plugId + ".local") {
+                var velocity = default_velocity;
+                leds = [];
+                for (i = 0; i < num_targets; i++) {
+                    led = {};
+                    led.position = Math.floor(Math.random() * 12);
+                    led.orientation = Math.floor(Math.random() * 2) + 1;
+                    randomizeColor(led);
+                    leds.push(led);
+                }
+                var initconfigs = plugs.initConfig(leds, velocity);
+                initializeLeds(element, initconfigs, leds);
+            }
+        });
+        res.sendStatus(200);
+    });
+
     router.get('/:plugId/selected/:ledId',function(req,res){
         var plugId = req.params.plugId;
         var plugName = 'plug'+plugId+'.local';
         var ledId = req.params.ledId;
         try {
             var plugState = plugs.getPlug(plugName);
-            if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
-                console.log("Ignoring Requests");
+            if (selectedLed(plugState, ledId)) {
                 res.sendStatus(200);
-            }else {
-                if (plugState.socketVariable.connected) {
-                    plugState.socketVariable.emit('selected', {"led": ledId});
-                    res.sendStatus(200);
-                    plugState.lastRequest = Date.now() / 1000;
-                } else {
-                    res.sendStatus(500);
-                }
+            } else {
+                res.sendStatus(500);
             }
         }
         catch (ex){
@@ -231,4 +267,51 @@ module.exports = function(socket_io) {
     });
 
     return router;
+
+    function initializeLeds(plugState, initConfigs,leds) {
+        if (plugState.socketVariable.connected) {
+            plugState.socketVariable.emit('initConfig', initConfigs);         //Send startUp Data
+            Object.assign(plugState, plugState, initConfigs);
+            plugState.initStateSet = 1;                                      //Plug has got it's startup Data
+            plugState.initTime = Date.now() / 1000;
+            plugState.lastRequest = Date.now() / 1000;
+            plugState.leds = leds;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function stopLeds(plugState) {
+        if (plugState.socketVariable.connected) {
+            plugState.socketVariable.emit('stop', {"stop": true});
+            delete plugState.leds;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function selectedLed(plugState, ledId) {
+        if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
+            console.log("Ignoring Requests");
+            res.sendStatus(200);
+        }else {
+            if (plugState.socketVariable.connected) {
+                plugState.socketVariable.emit('selected', {"led": ledId});
+                res.sendStatus(200);
+                plugState.lastRequest = Date.now() / 1000;
+            } else {
+                res.sendStatus(500);
+            }
+        }
+    }
+
+    function randomizeColor(led) {
+        var color = default_colors[actual_color_position % default_colors.length];
+        actual_color_position++;
+        led.red = color.red;
+        led.green = color.green;
+        led.blue = color.blue;
+    }
 };

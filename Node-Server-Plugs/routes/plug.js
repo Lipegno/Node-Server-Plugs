@@ -13,6 +13,7 @@ module.exports = function(socket_io) {
         {red:255,green:255,blue:255}
     ];
     var actual_color_position = Math.floor(Math.random() * default_colors.length);
+    var initial_led_position = Math.floor(Math.random() * plugs.LED_NUM);
     var default_velocity = 200;
     var num_targets = 5;
 
@@ -30,21 +31,38 @@ module.exports = function(socket_io) {
     });
 
     router.get('/start', function (req, res) {
-        for (var i = 0; i < plugs.activePlugs.length; i++) {
-            var velocity = default_velocity;
-            var leds = [{}];
-            leds[0].position = (Math.floor(Math.random() * 12) + 6) % 12;
-            leds[0].orientation = Math.floor(Math.random() * 2) + 1;
-            randomizeColor(leds[0]);
-            var initconfigs = plugs.initConfig(leds,velocity);
-            if (plugs.activePlugs[i].socketVariable) {
-                if (!initializeLeds(plugs.activePlugs[i], initconfigs, leds)) {
-                    res.sendStatus(500);
-                    break;
+        if(plugs.activePlugs.length > 0) {
+            for (var i = 0; i < plugs.activePlugs.length; i++) {
+                var velocity = default_velocity;
+                var leds = [{}];
+
+                //leds[0].position = (Math.floor(Math.random() * 12) + 6) % 12; This can't ensure that every single plug will have a different initial position
+
+                leds[0].position = initial_led_position%plugs.LED_NUM;
+                initial_led_position+=2;
+
+                //This ensure that each plug will rotate to different sides and starts in different positions
+                if(i%2 === 0 ) { // Odd or even
+                    leds[0].orientation = 1;//Math.floor(Math.random() * 2) + 1;
+                }else{
+                    leds[0].orientation = 2;
+                }
+
+                randomizeColor(leds[0]);
+
+                var initconfigs = plugs.initConfig(leds, velocity);
+                if (plugs.activePlugs[i].socketVariable) {
+                    if (!initializeLeds(plugs.activePlugs[i], initconfigs, leds)) {
+                        res.sendStatus(500);
+                        break;
+                    }
                 }
             }
+            res.sendStatus(200);
+        }else{
+            //The request should be ignored no socket is on
+            res.sendStatus(500);
         }
-        res.sendStatus(200);
     });
 
 

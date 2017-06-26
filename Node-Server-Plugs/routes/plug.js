@@ -235,6 +235,8 @@ module.exports = function(socket_io) {
     });
 
     router.get('/:plugId/selected/', function (req,res) {
+        var numLedSpinRight = 0;
+        var numLedSpinLeft = 0;
         var localLedStandartPosition = Math.floor(Math.random() * 12);
         var plugId = req.params.plugId;
         plugs.activePlugs.forEach(function (element, index) {
@@ -246,6 +248,24 @@ module.exports = function(socket_io) {
                     led = {};
                     led.position = localLedStandartPosition%12;
                     led.orientation = Math.floor(Math.random() * 2) + 1;
+
+                    if(led.orientation === 1){
+                        //Force LED to spin to other side
+                        numLedSpinRight +=1;
+                        if(numLedSpinRight === num_targets){
+                            led.orientation = 2;
+                            numLedSpinRight -=1;
+                            numLedSpinLeft +=1;
+                        }
+                    }else if(led.orientation === 2){
+                        numLedSpinLeft +=1;
+                        //Force LED to spin to other side
+                        if(numLedSpinLeft === num_targets) {
+                            led.orientation = 1;
+                            numLedSpinLeft -= 1;
+                            numLedSpinRight += 1;
+                        }
+                    }
                     randomizeColor(led);
                     leds.push(led);
                     localLedStandartPosition+=3;
@@ -264,14 +284,11 @@ module.exports = function(socket_io) {
         var ledId = req.params.ledId;
         try {
             var plugState = plugs.getPlug(plugName);
-            if (selectedLed(plugState, ledId)) {
-                res.sendStatus(200);
-            } else {
-                res.sendStatus(500);
-            }
+            var returnCode = selectedLed(plugState, ledId);
+            res.status(returnCode.status).send(returnCode.message);
         }
         catch (ex){
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
 
     });
@@ -292,7 +309,7 @@ module.exports = function(socket_io) {
         if (plugState.socketVariable.connected) {
             plugState.socketVariable.emit('initConfig', initConfigs);         //Send startUp Data
             Object.assign(plugState, plugState, initConfigs);
-            plugState.initStateSet = 1;                                      //Plug has got it's startup Data
+            //plugState.initStateSet = 1;                                      //Plug has got it's startup Data
             plugState.initTime = Date.now() / 1000;
             plugState.lastRequest = Date.now() / 1000;
             plugState.leds = leds;
@@ -313,16 +330,18 @@ module.exports = function(socket_io) {
     }
 
     function selectedLed(plugState, ledId) {
+        if(ledId > num_targets){
+            return {status: 404, message: "The selected Led does not exist."};
+        }
         if(Date.now()/1000 - plugState.lastRequest < timeThresholdToIgnoreRequests ){
-            console.log("Ignoring Requests");
-            res.sendStatus(200);
+            return {status:200, message:"Ignoring Requests"};
         }else {
             if (plugState.socketVariable.connected) {
                 plugState.socketVariable.emit('selected', {"led": ledId});
-                res.sendStatus(200);
                 plugState.lastRequest = Date.now() / 1000;
+                return {status:200, message:"OK"};
             } else {
-                res.sendStatus(500);
+                return {status:500, message: "WebSocket is not Open"};
             }
         }
     }

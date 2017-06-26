@@ -29,4 +29,5 @@ exports.getPlug = function(plugName) {
             return exports.activePlugs[i];
         }
     }
+    return false;
 };

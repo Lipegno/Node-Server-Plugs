@@ -16,6 +16,7 @@ module.exports = function(socket_io) {
     var initial_led_position = Math.floor(Math.random() * plugs.LED_NUM);
     var default_velocity = 200;
     var num_targets = 4;
+    var initialMovementStarted = false;
 
 //velocidade, posição inicial
     router.get('/', function (req, res) {
@@ -51,16 +52,18 @@ module.exports = function(socket_io) {
 
                 var initconfigs = plugs.initConfig(leds, velocity);
                 if (plugs.activePlugs[i].socketVariable) {
-                    if (!initializeLeds(plugs.activePlugs[i], initconfigs, leds)) {
-                        res.sendStatus(500);
+                    var initialization = initializeLeds(plugs.activePlugs[i], initconfigs, leds, false);
+                    if (initialization.status !== 200) {
+                        res.status(initialization.status).send(initialization.send);
                         break;
                     }
                 }
             }
+            initialMovementStarted = true;
             res.sendStatus(200);
         }else{
             //The request should be ignored no socket is on
-            res.sendStatus(500);
+            res.status(500).send("There are no sockets available");
         }
     });
 
@@ -115,18 +118,21 @@ module.exports = function(socket_io) {
         var plugName = 'plug' + plugId + '.local';
         var relayState = parseInt(req.body.state);
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('changeRelayState', {"relayState": relayState});
-                plugState.relayState = relayState;
-                res.sendStatus(200);
+            if(plugState) {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('changeRelayState', {"relayState": relayState});
+                    plugState.relayState = relayState;
+                    res.sendStatus(200);
+                } else {
+                    res.status(500).send("Websocket not open");
+                }
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist")
             }
         }
         catch (ex) {
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
@@ -136,21 +142,22 @@ module.exports = function(socket_io) {
         var plugName = 'plug' + plugId + '.local';
         var orientation = parseInt(req.body.orientation);
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('changeOrientation', {"orientation": orientation});
-
-                plugState.orientation = orientation;
-                plugState.initTime = Date.now() / 1000;
-                res.sendStatus(200);
+            if(plugState) {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('changeOrientation', {"orientation": orientation});
+                    plugState.orientation = orientation;
+                    plugState.initTime = Date.now() / 1000;
+                    res.sendStatus(200);
+                } else {
+                    res.status(500).send("Websocket not open");
+                }
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist")
             }
         }
         catch (ex) {
-            console.log("Exception" + ex);
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
@@ -161,17 +168,21 @@ module.exports = function(socket_io) {
         var personNear = parseInt(req.body.personNear);
         try {
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('changePersonNear', {"personNear": personNear});
-                plugState.personNear = personNear;
-                console.log("Value for person near" + personNear);
-                res.sendStatus(200);
+            if(plugState) {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('changePersonNear', {"personNear": personNear});
+                    plugState.personNear = personNear;
+                    console.log("Value for person near" + personNear);
+                    res.sendStatus(200);
+                } else {
+                    res.status(500).send("Websocket not open");
+                }
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist")
             }
         }
         catch (ex) {
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
@@ -181,18 +192,21 @@ module.exports = function(socket_io) {
         var plugName = 'plug' + plugId + '.local';
         var delay = parseInt(req.body.delay);
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (plugState.socketVariable.connected) {
-                plugState.socketVariable.emit('changeDelay', {"delay": delay});
-                plugState.delay = delay;
-                res.sendStatus(200);
+            if(plugState) {
+                if (plugState.socketVariable.connected) {
+                    plugState.socketVariable.emit('changeDelay', {"delay": delay});
+                    plugState.delay = delay;
+                    res.sendStatus(200);
+                } else {
+                    res.status(500).send("Websocket not open");
+                }
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist")
             }
         }
         catch (ex) {
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
@@ -202,17 +216,16 @@ module.exports = function(socket_io) {
         var plugName = 'plug' + plugId + '.local';
         var initConfigs = plugs.initConfig(req.body.leds,req.body.velocity);
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if(initializeLeds(plugState,initConfigs,req.body.leds)) {
-                res.sendStatus(200);
+            if(plugState) {
+                var initialization = initializeLeds(plugState,initConfigs,req.body.leds, false);
+                res.status(initialization.status).send(initialization.message);
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist")
             }
         }
         catch (ex) {
-            console.log(ex);
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
@@ -221,60 +234,65 @@ module.exports = function(socket_io) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
         try {
-            //Creates a new socket
             var plugState = plugs.getPlug(plugName);
-            if (stopLeds(plugState)) {
-                res.sendStatus(200);
+            if(plugState) {
+                var stopResult = stopLeds(plugState);
+                res.status(stopResult.status).send(stopResult.message);
             } else {
-                res.sendStatus(500);
+                res.status(404).send("The selected plug does not exist");
             }
         }
         catch (ex) {
-            res.sendStatus(500);
+            res.status(500).send(ex);
         }
     });
 
     router.get('/:plugId/selected/', function (req,res) {
-        var numLedSpinRight = 0;
-        var numLedSpinLeft = 0;
-        var localLedStandartPosition = Math.floor(Math.random() * 12);
-        var plugId = req.params.plugId;
-        plugs.activePlugs.forEach(function (element, index) {
-            stopLeds(element);
-            if(element.name === "plug" + plugId + ".local") {
-                var velocity = default_velocity;
-                leds = [];
-                for (i = 0; i < num_targets; i++) {
-                    led = {};
-                    led.position = localLedStandartPosition%12;
-                    led.orientation = Math.floor(Math.random() * 2) + 1;
+        if (initialMovementStarted) {
+            initialMovementStarted = false;
+            var numLedSpinRight = 0;
+            var numLedSpinLeft = 0;
+            var localLedStandartPosition = Math.floor(Math.random() * 12);
+            var plugId = req.params.plugId;
+            plugs.activePlugs.forEach(function (element, index) {
+                stopLeds(element);
+                if (element.name === "plug" + plugId + ".local") {
+                    var velocity = default_velocity;
+                    leds = [];
+                    for (i = 0; i < num_targets; i++) {
+                        led = {};
+                        led.position = localLedStandartPosition % 12;
+                        led.orientation = Math.floor(Math.random() * 2) + 1;
 
-                    if(led.orientation === 1){
-                        //Force LED to spin to other side
-                        numLedSpinRight +=1;
-                        if(numLedSpinRight === num_targets){
-                            led.orientation = 2;
-                            numLedSpinRight -=1;
-                            numLedSpinLeft +=1;
-                        }
-                    }else if(led.orientation === 2){
-                        numLedSpinLeft +=1;
-                        //Force LED to spin to other side
-                        if(numLedSpinLeft === num_targets) {
-                            led.orientation = 1;
-                            numLedSpinLeft -= 1;
+                        if (led.orientation === 1) {
+                            //Force LED to spin to other side
                             numLedSpinRight += 1;
+                            if (numLedSpinRight === num_targets) {
+                                led.orientation = 2;
+                                numLedSpinRight -= 1;
+                                numLedSpinLeft += 1;
+                            }
+                        } else if (led.orientation === 2) {
+                            numLedSpinLeft += 1;
+                            //Force LED to spin to other side
+                            if (numLedSpinLeft === num_targets) {
+                                led.orientation = 1;
+                                numLedSpinLeft -= 1;
+                                numLedSpinRight += 1;
+                            }
                         }
+                        randomizeColor(led);
+                        leds.push(led);
+                        localLedStandartPosition += 3;
                     }
-                    randomizeColor(led);
-                    leds.push(led);
-                    localLedStandartPosition+=3;
+                    var initconfigs = plugs.initConfig(leds, velocity);
+                    initializeLeds(element, initconfigs, leds, true);
                 }
-                var initconfigs = plugs.initConfig(leds, velocity);
-                initializeLeds(element, initconfigs, leds);
-            }
-        });
-        res.status(200).send("Plug initialized with " + num_targets + " targets.");
+            });
+            res.status(200).send("Plug initialized with " + num_targets + " targets.");
+        } else {
+            res.status(500).send("You can't select a socket without starting them first. Go to /plug/start.")
+        }
     });
 
 
@@ -284,8 +302,12 @@ module.exports = function(socket_io) {
         var ledId = req.params.ledId;
         try {
             var plugState = plugs.getPlug(plugName);
-            var returnCode = selectedLed(plugState, ledId);
-            res.status(returnCode.status).send(returnCode.message);
+            if (plugState.selected) {
+                var returnCode = selectedLed(plugState, ledId);
+                res.status(returnCode.status).send(returnCode.message);
+            } else {
+                res.status(500).send("You're trying to access a plug that is not selected");
+            }
         }
         catch (ex){
             res.status(500).send(ex);
@@ -305,17 +327,17 @@ module.exports = function(socket_io) {
 
     return router;
 
-    function initializeLeds(plugState, initConfigs,leds) {
+    function initializeLeds(plugState, initConfigs,leds, isSelected) {
         if (plugState.socketVariable.connected) {
             plugState.socketVariable.emit('initConfig', initConfigs);         //Send startUp Data
             Object.assign(plugState, plugState, initConfigs);
-            //plugState.initStateSet = 1;                                      //Plug has got it's startup Data
+            plugState.selected = isSelected;
             plugState.initTime = Date.now() / 1000;
             plugState.lastRequest = Date.now() / 1000;
             plugState.leds = leds;
-            return true;
+            return {status:200, message:"Plug initialized with " + leds.length + " targets."}
         } else {
-            return false;
+            return {status:500, message: "WebSocket is not Open"};
         }
     }
 
@@ -323,9 +345,9 @@ module.exports = function(socket_io) {
         if (plugState.socketVariable.connected) {
             plugState.socketVariable.emit('stop', {"stop": true});
             delete plugState.leds;
-            return true;
+            return {status: 200, message: "OK"};
         } else {
-            return false;
+            return {status: 500, message: "WebSocket is not Open"};
         }
     }
 

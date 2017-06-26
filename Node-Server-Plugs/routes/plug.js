@@ -18,15 +18,14 @@ module.exports = function(socket_io) {
     var num_targets = 4;
     var initialMovementStarted = false;
 
-//velocidade, posição inicial
     router.get('/', function (req, res) {
         var m_plugs = [];
         for (var i = 0; i < plugs.activePlugs.length; i++) {
-            m_plugs.push({
-                name: plugs.activePlugs[i].name,
-                velocity: plugs.activePlugs[i].delay,
-                leds: plugs.activePlugs[i].leds
-            })
+            leds = plugs.activePlugs[i].leds[0];
+            leds.name = plugs.activePlugs[i].name;
+            m_plugs.push(
+                leds
+            )
         }
         res.json(m_plugs);
     });

@@ -22,9 +22,8 @@ module.exports = function(socket_io) {
         var m_plugs = [];
         for (var i = 0; i < plugs.activePlugs.length; i++) {
             if (typeof plugs.activePlugs[i].leds !== "undefined") {
-                leds = plugs.activePlugs[i].leds[0];
-                leds.name = plugs.activePlugs[i].name;
-                m_plugs.push(leds);
+                led = calculatePosition(plugs.activePlugs[i])[0];
+                m_plugs.push(led);
             } else {
                 m_plugs.push({name:plugs.activePlugs[i].name});
             }
@@ -76,33 +75,7 @@ module.exports = function(socket_io) {
             var selectedPlug = plugs.getPlug(plugName);
             console.log(selectedPlug.leds);
             if (selectedPlug.leds !== undefined) {
-                var velocity = selectedPlug.delay;
-                var initTime = selectedPlug.initTime * 1000; //conversion to seconds
-
-                var leds = [];
-
-                var firsLEDtPosition = parseInt(selectedPlug.leds[0].position);
-                selectedPlug.leds.forEach(function (result, index) {
-                    var offset = result.position - firsLEDtPosition;
-                    var baseActualPosition = 0;
-                    if (result.orientation == 1) {
-                        baseActualPosition = Math.floor(((Date.now() - initTime) % (velocity * plugs.LED_NUM )) / (velocity));
-                    }
-                    else {
-                        baseActualPosition = (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (plugs.LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity)));
-
-                    }
-                    var actualPosition = (firsLEDtPosition + offset + baseActualPosition) % plugs.LED_NUM;
-                    leds.push({
-                        'position': actualPosition,
-                        'velocity': parseInt(velocity),
-                        'orientation': parseInt(result.orientation),
-                        'red': parseInt(result.red),
-                        'green': parseInt(result.green),
-                        'blue': parseInt(result.blue)
-                    })
-
-                });
+                var leds = calculatePosition(selectedPlug);
                 res.json(leds);
             }
             else {
@@ -375,5 +348,34 @@ module.exports = function(socket_io) {
         led.red = color.red;
         led.green = color.green;
         led.blue = color.blue;
+    }
+
+    function calculatePosition(selectedPlug) {
+        var velocity = selectedPlug.delay;
+        var initTime = selectedPlug.initTime * 1000; //conversion to seconds
+        var leds = [];
+        var firstLEDPosition = parseInt(selectedPlug.leds[0].position);
+        selectedPlug.leds.forEach(function (result, index) {
+            var offset = result.position - firstLEDPosition;
+            var baseActualPosition = 0;
+            if (result.orientation == 1) {
+                baseActualPosition = Math.floor(((Date.now() - initTime) % (velocity * plugs.LED_NUM )) / (velocity));
+            }
+            else {
+                baseActualPosition = (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity) === 0) ? 0 : (plugs.LED_NUM - (Math.floor(((Date.now() - initTime) % (velocity * 12)) / velocity)));
+
+            }
+            var actualPosition = (firstLEDPosition + offset + baseActualPosition) % plugs.LED_NUM;
+            leds.push({
+                'position': actualPosition,
+                'velocity': parseInt(velocity),
+                'orientation': parseInt(result.orientation),
+                'red': parseInt(result.red),
+                'green': parseInt(result.green),
+                'blue': parseInt(result.blue)
+            })
+
+        });
+        return leds;
     }
 };

@@ -21,11 +21,13 @@ module.exports = function(socket_io) {
     router.get('/', function (req, res) {
         var m_plugs = [];
         for (var i = 0; i < plugs.activePlugs.length; i++) {
-            leds = plugs.activePlugs[i].leds[0];
-            leds.name = plugs.activePlugs[i].name;
-            m_plugs.push(
-                leds
-            )
+            if (typeof plugs.activePlugs[i].leds !== "undefined") {
+                leds = plugs.activePlugs[i].leds[0];
+                leds.name = plugs.activePlugs[i].name;
+                m_plugs.push(leds);
+            } else {
+                m_plugs.push({name:plugs.activePlugs[i].name});
+            }
         }
         res.json(m_plugs);
     });

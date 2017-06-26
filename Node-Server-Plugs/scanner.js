@@ -26,11 +26,11 @@ exports.networkScanner = function(socket_io_server, plugs){
                 console.log("The length before adding" + plugs.activePlugs.length);
                 socket_io_server.emit("new_plug", plugObject);
                 plugObject['socketVariable'] = io.connect('http://' + plugObject['name'] + ':5000',{'reconnectionAttempts': 3});
-                plugs.activePlugs.push(plugObject);
-                console.log("The length after adding " + plugs.activePlugs.length);
 
                 plugObject['socketVariable'].on('connect',function(data){
                     plugObject['socketVariable'].emit('event',{data:'Im connected'});
+                    plugs.activePlugs.push(plugObject);
+                    console.log("The length after adding " + plugs.activePlugs.length);
                 });
 
                 plugObject['socketVariable'].on('reconnect_failed',function(data){

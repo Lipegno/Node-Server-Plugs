@@ -35,7 +35,7 @@ exports.networkScanner = function(socket_io_server, plugs){
                 plugObject['socketVariable'].on('connect',function(data){
                    console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
                     console.log("The length before adding" + plugs.activePlugs.length);
-                socket_io_server.emit("new_plug", plugObject);
+                socket_io_server.emit("new_plug", {name:service.host.substring(0, service.host.length - 1)});
                     plugObject['socketVariable'].emit('event',{data:'Im connected'});
                     plugs.activePlugs.push(plugObject);
                     console.log("The length after adding " + plugs.activePlugs.length);

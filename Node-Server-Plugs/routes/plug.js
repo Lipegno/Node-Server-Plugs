@@ -15,7 +15,7 @@ module.exports = function(socket_io) {
     var actual_color_position = Math.floor(Math.random() * default_colors.length);
     var initial_led_position = Math.floor(Math.random() * plugs.LED_NUM);
     var default_velocity = 200;
-    var num_targets = 5;
+    var num_targets = 6;
     var initialMovementStarted = false;
 
     router.get('/', function (req, res) {
@@ -227,6 +227,7 @@ module.exports = function(socket_io) {
             var numLedSpinRight = 0;
             var numLedSpinLeft = 0;
             var localLedStandartPosition = Math.floor(Math.random() * 12);
+            console.log("Initial Position is: " + localLedStandartPosition);
             var plugId = req.params.plugId;
             plugs.activePlugs.forEach(function (element, index) {
                 stopLeds(element);
@@ -237,27 +238,41 @@ module.exports = function(socket_io) {
                         led = {};
                         led.position = localLedStandartPosition % 12;
                         led.orientation = Math.floor(Math.random() * 2) + 1;
+                        randomizeColor(led);
 
                         if (led.orientation === 1) {
-                            //Force LED to spin to other side
                             numLedSpinRight += 1;
-                            if (numLedSpinRight === num_targets) {
+                            //Avoid Overlaping Leds
+                            for(k  = 0; k < leds.length; k++){
+                                if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
+                                    led.orientation = 2;
+                                    numLedSpinLeft += 1;
+                                    numLedSpinRight -= 1;
+                                }
+                            }
+                            //Num targets excedded?
+                            if (numLedSpinRight > Math.ceil(num_targets/2)) {
                                 led.orientation = 2;
                                 numLedSpinRight -= 1;
                                 numLedSpinLeft += 1;
                             }
                         } else if (led.orientation === 2) {
-                            numLedSpinLeft += 1;
-                            //Force LED to spin to other side
-                            if (numLedSpinLeft === num_targets) {
+                            numLedSpinLeft +=1;
+                            for(k  = 0; k < leds.length; k++){
+                                if((leds[k].position == led.position && leds[k].orientation == led.orientation )){
+                                    led.orientation = 1;
+                                    numLedSpinRight += 1;
+                                    numLedSpinLeft -= 1;
+                                }
+                            }
+                            if (numLedSpinLeft > Math.ceil(num_targets/2)) {
                                 led.orientation = 1;
-                                numLedSpinLeft -= 1;
                                 numLedSpinRight += 1;
+                                numLedSpinLeft -= 1;
                             }
                         }
-                        randomizeColor(led);
                         leds.push(led);
-                        localLedStandartPosition += 3;
+                        localLedStandartPosition += 4;
                     }
                     var initconfigs = plugs.initConfig(leds, velocity);
                     initializeLeds(element, initconfigs, leds, true);

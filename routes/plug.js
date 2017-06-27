@@ -2,7 +2,10 @@ module.exports = function(socket_io) {
     var express = require('express');
     var router = express.Router();
     var plugs = require('../plugs');
-    var timeThresholdToIgnoreRequests = 5;
+
+    var timeThresholdToIgnoreRequests = 5; // Time in seconds while requests from the same source are ignored.
+
+    // Default colors used in the LEDs
     var default_colors = [
         {red:0,green:0,blue:255},
         {red:0,green:255,blue:0},
@@ -12,17 +15,31 @@ module.exports = function(socket_io) {
         {red:255,green:255,blue:0},
         {red:255,green:255,blue:255}
     ];
+
+    // Index used to select the next color to be associated to the LED
     var actual_color_position = Math.floor(Math.random() * default_colors.length);
+
+    // Randomly generates a LED to start the movement
     var initial_led_position = Math.floor(Math.random() * plugs.LED_NUM);
+
+    // Default value for velocity (delay between LED transition)
     var default_velocity = 200;
+
+    // Default Number of Targets
     var num_targets = 6;
+
+    // Variable to control if the plugs are making the initial movement or not
     var initialMovementStarted = false;
 
+    /**
+     * Returns an array with all LEDs moving and it's corresponding plug name.
+     */
     router.get('/', function (req, res) {
         var m_plugs = [];
         for (var i = 0; i < plugs.activePlugs.length; i++) {
             if (typeof plugs.activePlugs[i].leds !== "undefined") {
                 led = calculatePosition(plugs.activePlugs[i])[0];
+                led.name = plugs.activePlugs[i].name
                 m_plugs.push(led);
             } else {
                 m_plugs.push({name:plugs.activePlugs[i].name});
@@ -31,6 +48,10 @@ module.exports = function(socket_io) {
         res.json(m_plugs);
     });
 
+
+    /**
+     * Starts the movement of a LED in all active plugs.
+     */
     router.get('/start', function (req, res) {
         if(plugs.activePlugs.length > 0) {
             for (var i = 0; i < plugs.activePlugs.length; i++) {
@@ -67,7 +88,9 @@ module.exports = function(socket_io) {
         }
     });
 
-
+    /**
+     * Returns an array with all the LEDs turned on on the given plug
+     */
     router.get('/:plugid(\\d+)', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -86,7 +109,9 @@ module.exports = function(socket_io) {
         }
     });
 
-    /*Changes Relay State*/
+    /**
+     * Changes Relay State of the plug
+     */
     router.post('/:plugid/relay', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -110,8 +135,11 @@ module.exports = function(socket_io) {
         }
     });
 
-    /*Changes Oriention*/
-    router.post('/:plugid/orientation', function (req, res) {
+    /**
+     * Changes Orientation
+     * NOT USED RIGHT NOW
+     */
+    /*router.post('/:plugid/orientation', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
         var orientation = parseInt(req.body.orientation);
@@ -133,9 +161,11 @@ module.exports = function(socket_io) {
         catch (ex) {
             res.status(500).send(ex);
         }
-    });
+    });*/
 
-    /*Changes Person Near*/
+    /**
+     * Changes Person Near
+     */
     router.post('/:plugid/personNear', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -160,7 +190,9 @@ module.exports = function(socket_io) {
         }
     });
 
-    /*Changes Velocity*/
+    /**
+     * Changes Velocity
+     */
     router.post('/:plugid/delay', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -184,7 +216,9 @@ module.exports = function(socket_io) {
         }
     });
 
-    /*Initializes LEDs*/
+    /**
+     * Initializes LEDs with the configurations present in post parameters
+     */
     router.post('/:plugid/', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -203,7 +237,9 @@ module.exports = function(socket_io) {
         }
     });
 
-    /*Stop LEDs*/
+    /**
+     * Stop LEDs
+     */
     router.post('/:plugid/stopLeds', function (req, res) {
         var plugId = req.params.plugid;
         var plugName = 'plug' + plugId + '.local';
@@ -221,6 +257,10 @@ module.exports = function(socket_io) {
         }
     });
 
+    /**
+     * Used when a plug is selected
+     * Turns off all other plugs LEDs and randomly starts a movement of leds in the selected plug
+     */
     router.get('/:plugId/selected/', function (req,res) {
         if (initialMovementStarted) {
             initialMovementStarted = false;
@@ -259,7 +299,7 @@ module.exports = function(socket_io) {
                         } else if (led.orientation === 2) {
                             numLedSpinLeft +=1;
                             for(k  = 0; k < leds.length; k++){
-                                if((leds[k].position == led.position && leds[k].orientation == led.orientation )){
+                                if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
                                     led.orientation = 1;
                                     numLedSpinRight += 1;
                                     numLedSpinLeft -= 1;
@@ -284,7 +324,9 @@ module.exports = function(socket_io) {
         }
     });
 
-
+    /**
+     * Turns all the LEDs to the color of the selected LED
+     */
     router.get('/:plugId/selected/:ledId',function(req,res){
         var plugId = req.params.plugId;
         var plugName = 'plug'+plugId+'.local';
@@ -304,7 +346,12 @@ module.exports = function(socket_io) {
 
     });
 
-    router.get('/new', function (req, res) {
+
+    /**
+     * Add a new fake plug
+     * FOR TEST PURPOSES ONLY
+     */
+    /*router.get('/new', function (req, res) {
         var plugName = "plug" + plugs.activePlugs.length + ".local";
         var plugObject = {name:plugName};
         console.log("The length before adding" + plugs.activePlugs.length);
@@ -312,10 +359,18 @@ module.exports = function(socket_io) {
         plugs.activePlugs.push(plugObject);
         console.log("The length after adding " + plugs.activePlugs.length);
         res.sendStatus(200);
-    });
+    });*/
 
     return router;
 
+    /**
+     * Initializes the plug LEDs with the given configurations
+     * @param plugState an Object with all the plug information
+     * @param initConfigs configs to be sent to the plug
+     * @param leds  array of leds that is going to be turned on
+     * @param isSelected (boolean) true if the plug the plug is now selected
+     * @returns {*} with status code and message
+     */
     function initializeLeds(plugState, initConfigs,leds, isSelected) {
         if (plugState.socketVariable.connected) {
             plugState.socketVariable.emit('initConfig', initConfigs);         //Send startUp Data
@@ -330,6 +385,11 @@ module.exports = function(socket_io) {
         }
     }
 
+    /**
+     * Stops the led movements
+     * @param plugState
+     * @returns {*}
+     */
     function stopLeds(plugState) {
         if (plugState.socketVariable.connected) {
             plugState.socketVariable.emit('stop', {"stop": true});
@@ -340,6 +400,12 @@ module.exports = function(socket_io) {
         }
     }
 
+    /**
+     * Handles the the event of selecting on LED
+     * @param plugState
+     * @param ledId
+     * @returns {*}
+     */
     function selectedLed(plugState, ledId) {
         if(ledId > num_targets){
             return {status: 404, message: "The selected Led does not exist."};
@@ -357,6 +423,10 @@ module.exports = function(socket_io) {
         }
     }
 
+    /**
+     * Select the color to be used on the LED
+     * @param led
+     */
     function randomizeColor(led) {
         var color = default_colors[actual_color_position % default_colors.length];
         actual_color_position++;
@@ -365,6 +435,11 @@ module.exports = function(socket_io) {
         led.blue = color.blue;
     }
 
+    /**
+     * Simulates and calculates the actual position of the LEDs using the elapsed time.
+     * @param selectedPlug
+     * @returns {Array}
+     */
     function calculatePosition(selectedPlug) {
         var velocity = selectedPlug.delay;
         var initTime = selectedPlug.initTime * 1000; //conversion to seconds

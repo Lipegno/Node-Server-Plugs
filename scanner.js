@@ -18,6 +18,10 @@ exports.networkScanner = function(socket_io_server, plugs){
         console.log('Something went wrong creating the webSocket' + ex)
     }
 
+    /**
+     * Fired when a new host is detected.
+     * In this case we filter to detect only plugs
+     */
     browser.on('serviceUp', function(service) {
         if(service.host.substring(0, 4) === "plug") {
             console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
@@ -25,19 +29,23 @@ exports.networkScanner = function(socket_io_server, plugs){
             try {
                 console.log("The length before adding" + plugs.activePlugs.length);
                 socket_io_server.emit("new_plug", plugObject);
+
+                // Creates a websocket with the plug
                 plugObject['socketVariable'] = io.connect('http://' + plugObject['name'] + ':5000',{'reconnectionAttempts': 3});
 
+                // When a good  connection is established add the plug to the memory
                 plugObject['socketVariable'].on('connect',function(data){
                     plugObject['socketVariable'].emit('event',{data:'Im connected'});
                     plugs.activePlugs.push(plugObject);
                     console.log("The length after adding " + plugs.activePlugs.length);
                 });
 
+                // After 3 failed reconnection attempts removes the plug from the memory
                 plugObject['socketVariable'].on('reconnect_failed',function(data){
                     plugs.findAndRemove('name',plugObject['name']);
                 });
 
-                /*Start an heartbeat listener*/
+                // Start an heartbeat listener
                 plugObject['socketVariable'].on('heartbeat',function(data){
                     //onsole.log("Received an HeartBeat");
                     //console.log(data);
@@ -58,6 +66,9 @@ exports.networkScanner = function(socket_io_server, plugs){
         //console.log('An error occured: ' + error);
     });
 
+    /**
+     * When a host comes down and if it's a plug remove it from the memory
+     */
     browser.on('serviceDown', function(service) {
         if(service.name.substring(0,4) === "plug") {
             console.log("", service.name + ".local" + " is now disconnected.");

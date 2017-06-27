@@ -15,6 +15,7 @@ var app = express();
 var io = socket_io();
 app.io = io;
 
+// Starts the scanning of plus
 scanner.networkScanner(io, plugs);
 
 var index = require('./routes/index')(plugs);

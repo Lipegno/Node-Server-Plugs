@@ -35,8 +35,8 @@ exports.networkScanner = function(socket_io_server, plugs){
 
                 /*Start an heartbeat listener*/
                 plugObject['socketVariable'].on('heartbeat',function(data){
-                    console.log("Received an HeartBeat");
-                    console.log(data);
+                    //onsole.log("Received an HeartBeat");
+                    //console.log(data);
                     var plugState = plugs.getPlug(data.hostname + '.local');
                     plugState.initTime = data.timestamp;
                 });

@@ -26,7 +26,7 @@ module.exports = function(socket_io) {
     var default_velocity = 200;
 
     // Default Number of Targets
-    var num_targets = 6;
+    var num_targets = 5;
 
     // Variable to control if the plugs are making the initial movement or not
     var initialMovementStarted = false;
@@ -48,13 +48,13 @@ module.exports = function(socket_io) {
         res.json(m_plugs);
     });
 
-
     /**
      * Starts the movement of a LED in all active plugs.
      */
     router.get('/start', function (req, res) {
         if(plugs.activePlugs.length > 0) {
             for (var i = 0; i < plugs.activePlugs.length; i++) {
+                stopLeds(plugs.activePlugs[i]);
                 var velocity = default_velocity;
                 var leds = [{}];
 

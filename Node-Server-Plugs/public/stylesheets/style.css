@@ -1,0 +1,35 @@
+body {
+  margin-left: 5px;
+  margin-right: 5px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+#main-content{
+  padding-top: 65px;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.panel-heading .accordion-toggle:after {
+  /* symbol for "opening" panels */
+  font-family: 'Glyphicons Halflings';  /* essential for enabling glyphicon */
+  content: "\e114";    /* adjust as needed, taken from bootstrap.css */
+  float: right;        /* adjust as needed */
+  color: grey;         /* adjust as needed */
+}
+.panel-heading .accordion-toggle.collapsed:after {
+  /* symbol for "collapsed" panels */
+  content: "\e080";    /* adjust as needed, taken from bootstrap.css */
+}
+
+.glyphicon-play, .glyphicon-plus, .glyphicon-stop {
+  padding-left: 15px;
+  font-size: 20px;
+  padding-top: 18px;
+}
+
+.row{
+  margin-top: 5px;
+}

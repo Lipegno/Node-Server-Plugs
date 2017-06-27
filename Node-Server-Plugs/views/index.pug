@@ -1,0 +1,69 @@
+extends layout
+
+
+block styles
+    link(rel="stylesheet",href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css")
+    link(rel="stylesheet", href="/stylesheets/style.css")
+    link(rel="stylesheet", href="/stylesheets/bootstrap-colorpicker.min.css")
+
+
+block scripts
+    script(src='/javascripts/jquery-3.2.1.min.js')
+    script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js")
+    script(src='/javascripts/socket.io.js')
+    script(src='/javascripts/bootstrap-colorpicker.min.js')
+    script(src='/javascripts/validator.min.js')
+    script(src='/javascripts/index.js')
+    script(type='text/javascript').
+        var plugs = !{JSON.stringify(plugs).replace(/<\//g, '<\\/')};
+
+block body
+    .navbar.navbar-inverse.navbar-fixed-top
+        .container
+            .navbar-header
+                button.navbar-toggle(type='button', data-toggle='collapse', data-target='.navbar-collapse')
+                    span.icon-bar
+                    span.icon-bar
+                    span.icon-bar
+                a.navbar-brand(href='#') Smart Interaction
+            .nav-collapse
+
+    .container(id="main-content")
+        h3 Sockets Available :
+        div(id="plugs")
+            #accordion.panel-group
+            each plug in plugs
+
+                .panel.panel-default
+                    .panel-heading
+                        h4.panel-title
+                            a(data-toggle="collapse", data-parent="#accordion", href="#collapse" + (plug.name).substr(0, (plug.name).length - 6)).accordion-toggle Device Name: #{(plug.name).substr(0, (plug.name).length - 6)}
+
+                    div(id="collapse" + (plug.name).substr(0, (plug.name).length - 6)).panel-collapse.collapse
+                        .panel-body
+                            div.row
+                                div.col-xs-3
+                                    label Initial Position
+                                div.col-xs-3
+                                    label Orientation
+                                div.col-xs-3
+                                    label Color
+                                div.col.xs-3
+                                    label Remove
+
+                            form(data-toggle="validator" role="form" method="post" action="/plug/"+ (plug.name).match(/\d+/)[0])
+                                div.row
+                                    div.col-xs-6
+                                        div.form-group
+                                            label
+                                            if (typeof plug.leds !== 'undefined')
+                                                input(type="number" min=50 max=2000 placeholder="Velocity" data-error="Please insert a number between 50 and 2000" value=plug.velocity required).has-feedback.form-control.velocity
+                                            else
+                                                input(type="number" min=50 max=2000 placeholder="Velocity" data-error="Please insert a number between 50 and 2000" required).has-feedback.form-control.velocity
+                                            div.help-block.with-errors
+                                    div.col-xs-6
+                                        +icon("play")
+                                        +icon("stop")
+                                        +icon("plus")
+
+

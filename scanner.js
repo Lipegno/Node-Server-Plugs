@@ -24,17 +24,18 @@ exports.networkScanner = function(socket_io_server, plugs){
      */
     browser.on('serviceUp', function(service) {
         if(service.host.substring(0, 4) === "plug") {
-            console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
-            var plugObject = {name:service.host.substring(0, service.host.length - 1)};
+               var plugObject = {name:service.host.substring(0, service.host.length - 1)};
             try {
-                console.log("The length before adding" + plugs.activePlugs.length);
-                socket_io_server.emit("new_plug", plugObject);
+                
 
                 // Creates a websocket with the plug
                 plugObject['socketVariable'] = io.connect('http://' + plugObject['name'] + ':5000',{'reconnectionAttempts': 3});
 
                 // When a good  connection is established add the plug to the memory
                 plugObject['socketVariable'].on('connect',function(data){
+                   console.log("A new plug is on: ", service.host.substring(0, service.host.length - 1) + "");
+                    console.log("The length before adding" + plugs.activePlugs.length);
+                socket_io_server.emit("new_plug", plugObject);
                     plugObject['socketVariable'].emit('event',{data:'Im connected'});
                     plugs.activePlugs.push(plugObject);
                     console.log("The length after adding " + plugs.activePlugs.length);

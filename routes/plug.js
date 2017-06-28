@@ -140,28 +140,28 @@ module.exports = function(socket_io) {
      * NOT USED RIGHT NOW
      */
     /*router.post('/:plugid/orientation', function (req, res) {
-        var plugId = req.params.plugid;
-        var plugName = 'plug' + plugId + '.local';
-        var orientation = parseInt(req.body.orientation);
-        try {
-            var plugState = plugs.getPlug(plugName);
-            if(plugState) {
-                if (plugState.socketVariable.connected) {
-                    plugState.socketVariable.emit('changeOrientation', {"orientation": orientation});
-                    plugState.orientation = orientation;
-                    plugState.initTime = Date.now() / 1000;
-                    res.sendStatus(200);
-                } else {
-                    res.status(500).send("Websocket not open");
-                }
-            } else {
-                res.status(404).send("The selected plug does not exist")
-            }
-        }
-        catch (ex) {
-            res.status(500).send(ex);
-        }
-    });*/
+     var plugId = req.params.plugid;
+     var plugName = 'plug' + plugId + '.local';
+     var orientation = parseInt(req.body.orientation);
+     try {
+     var plugState = plugs.getPlug(plugName);
+     if(plugState) {
+     if (plugState.socketVariable.connected) {
+     plugState.socketVariable.emit('changeOrientation', {"orientation": orientation});
+     plugState.orientation = orientation;
+     plugState.initTime = Date.now() / 1000;
+     res.sendStatus(200);
+     } else {
+     res.status(500).send("Websocket not open");
+     }
+     } else {
+     res.status(404).send("The selected plug does not exist")
+     }
+     }
+     catch (ex) {
+     res.status(500).send(ex);
+     }
+     });*/
 
     /**
      * Changes Person Near
@@ -262,65 +262,71 @@ module.exports = function(socket_io) {
      * Turns off all other plugs LEDs and randomly starts a movement of leds in the selected plug
      */
     router.get('/:plugId/selected/', function (req,res) {
-        if (initialMovementStarted) {
-            initialMovementStarted = false;
-            var numLedSpinRight = 0;
-            var numLedSpinLeft = 0;
-            var localLedStandartPosition = Math.floor(Math.random() * 12);
-            console.log("Initial Position is: " + localLedStandartPosition);
-            var plugId = req.params.plugId;
-            plugs.activePlugs.forEach(function (element, index) {
-                stopLeds(element);
-                if (element.name === "plug" + plugId + ".local") {
-                    var velocity = default_velocity;
-                    leds = [];
-                    for (i = 0; i < num_targets; i++) {
-                        led = {};
-                        led.position = localLedStandartPosition % 12;
-                        led.orientation = Math.floor(Math.random() * 2) + 1;
-                        randomizeColor(led);
+        var plugId = req.params.plugId;
+        var plugName = 'plug' + plugId + '.local';
+        var plugState = plugs.getPlug(plugName);
+        if(plugState) {
+            if (initialMovementStarted) {
+                initialMovementStarted = false;
+                var numLedSpinRight = 0;
+                var numLedSpinLeft = 0;
+                var localLedStandartPosition = Math.floor(Math.random() * 12);
+                console.log("Initial Position is: " + localLedStandartPosition);
+                plugs.activePlugs.forEach(function (element, index) {
+                    stopLeds(element);
+                    if (element.name === "plug" + plugId + ".local") {
+                        var velocity = default_velocity;
+                        leds = [];
+                        for (i = 0; i < num_targets; i++) {
+                            led = {};
+                            led.position = localLedStandartPosition % 12;
+                            led.orientation = Math.floor(Math.random() * 2) + 1;
+                            randomizeColor(led);
 
-                        if (led.orientation === 1) {
-                            numLedSpinRight += 1;
-                            //Avoid Overlaping Leds
-                            for(k  = 0; k < leds.length; k++){
-                                if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
-                                    led.orientation = 2;
-                                    numLedSpinLeft += 1;
-                                    numLedSpinRight -= 1;
+                            if (led.orientation === 1) {
+                                numLedSpinRight += 1;
+                                //Avoid Overlaping Leds
+                                for(k  = 0; k < leds.length; k++){
+                                    if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
+                                        led.orientation = 2;
+                                        numLedSpinLeft += 1;
+                                        numLedSpinRight -= 1;
+                                    }
                                 }
-                            }
-                            //Num targets excedded?
-                            if (numLedSpinRight > Math.ceil(num_targets/2)) {
-                                led.orientation = 2;
-                                numLedSpinRight -= 1;
-                                numLedSpinLeft += 1;
-                            }
-                        } else if (led.orientation === 2) {
-                            numLedSpinLeft +=1;
-                            for(k  = 0; k < leds.length; k++){
-                                if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
+                                //Num targets excedded?
+                                if (numLedSpinRight > Math.ceil(num_targets/2)) {
+                                    led.orientation = 2;
+                                    numLedSpinRight -= 1;
+                                    numLedSpinLeft += 1;
+                                }
+                            } else if (led.orientation === 2) {
+                                numLedSpinLeft +=1;
+                                for(k  = 0; k < leds.length; k++){
+                                    if((leds[k].position === led.position && leds[k].orientation === led.orientation )){
+                                        led.orientation = 1;
+                                        numLedSpinRight += 1;
+                                        numLedSpinLeft -= 1;
+                                    }
+                                }
+                                if (numLedSpinLeft > Math.ceil(num_targets/2)) {
                                     led.orientation = 1;
                                     numLedSpinRight += 1;
                                     numLedSpinLeft -= 1;
                                 }
                             }
-                            if (numLedSpinLeft > Math.ceil(num_targets/2)) {
-                                led.orientation = 1;
-                                numLedSpinRight += 1;
-                                numLedSpinLeft -= 1;
-                            }
+                            leds.push(led);
+                            localLedStandartPosition += 4;
                         }
-                        leds.push(led);
-                        localLedStandartPosition += 4;
+                        var initconfigs = plugs.initConfig(leds, velocity);
+                        initializeLeds(element, initconfigs, leds, true);
                     }
-                    var initconfigs = plugs.initConfig(leds, velocity);
-                    initializeLeds(element, initconfigs, leds, true);
-                }
-            });
-            res.status(200).send("Plug initialized with " + num_targets + " targets.");
+                });
+                res.status(200).send("Plug initialized with " + num_targets + " targets.");
+            } else {
+                res.status(500).send("You can't select a socket without starting them first. Go to /plug/start.")
+            }
         } else {
-            res.status(500).send("You can't select a socket without starting them first. Go to /plug/start.")
+            res.status(404).send("The selected plug does not exist");
         }
     });
 
@@ -352,14 +358,14 @@ module.exports = function(socket_io) {
      * FOR TEST PURPOSES ONLY
      */
     /*router.get('/new', function (req, res) {
-        var plugName = "plug" + plugs.activePlugs.length + ".local";
-        var plugObject = {name:plugName};
-        console.log("The length before adding" + plugs.activePlugs.length);
-        socket_io.emit("new_plug", plugObject);
-        plugs.activePlugs.push(plugObject);
-        console.log("The length after adding " + plugs.activePlugs.length);
-        res.sendStatus(200);
-    });*/
+     var plugName = "plug" + plugs.activePlugs.length + ".local";
+     var plugObject = {name:plugName};
+     console.log("The length before adding" + plugs.activePlugs.length);
+     socket_io.emit("new_plug", plugObject);
+     plugs.activePlugs.push(plugObject);
+     console.log("The length after adding " + plugs.activePlugs.length);
+     res.sendStatus(200);
+     });*/
 
     return router;
 

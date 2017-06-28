@@ -51,7 +51,8 @@ module.exports = function(socket_io) {
     /**
      * Starts the movement of a LED in all active plugs.
      */
-    router.get('/start', function (req, res) {
+    router.get('/start/:numtarget', function (req, res) {
+        num_targets = req.params.numtarget;
         if(plugs.activePlugs.length > 0) {
             for (var i = 0; i < plugs.activePlugs.length; i++) {
                 stopLeds(plugs.activePlugs[i]);
@@ -87,6 +88,7 @@ module.exports = function(socket_io) {
             res.status(500).send("There are no sockets available");
         }
     });
+
 
     /**
      * Returns an array with all the LEDs turned on on the given plug
